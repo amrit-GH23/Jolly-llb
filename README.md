@@ -70,16 +70,12 @@ Legal Response with Citations
 
 ```text
 Harvey-Spector/
-├── COI.json                # Constitution Articles Dataset (1–35)
-├── requirements.txt
-├── .env
 ├── .gitignore
 ├── frontend/               # React UI
-└── app/
-    ├── config.py           # Environment configuration
-    ├── ingest.py           # Data ingestion and embeddings
-    ├── rag.py              # Retrieval + generation pipeline
-    └── main.py             # FastAPI API server
+├── backend/                # server
+├── docker-compose.yml
+├──Readme.md
+
 ```
 
 ## ⚙️ Prerequisites
@@ -89,7 +85,8 @@ Harvey-Spector/
 - Docker
 - Docker Compose (optional)
 
-## 🐳 Start Ollama (Docker)
+## Manual setup
+## 🐳 Start Ollama (Docker) 
 
 ```bash
 docker run -d \
