@@ -1,6 +1,6 @@
 # ⚖️ Jolly LLB — Indian Constitution RAG Assistant
 
-A local **AI legal assistant** that answers natural‑language questions about the **Constitution of India (Articles 1–35)** using a **Retrieval‑Augmented Generation (RAG)** pipeline. Responses are grounded in constitutional text and include citations.
+A local **AI legal assistant** that answers natural‑language questions about the **Constitution of India** using a **Retrieval‑Augmented Generation (RAG)** pipeline. Responses are grounded in constitutional text and include citations.
 
 > **Note**: This project runs fully locally using **Docker + Ollama** (no external APIs required).
 
