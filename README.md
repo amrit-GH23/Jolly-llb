@@ -1,34 +1,35 @@
-# ⚖️ Jolly LLB — Indian Constitution RAG Assistant
+# ⚖️ Jolly LLB — Indian Law RAG Assistant
 
-A local **AI legal assistant** that answers natural‑language questions about the **Constitution of India** using a **Retrieval‑Augmented Generation (RAG)** pipeline. Responses are grounded in constitutional text and include citations.
+A local **AI legal assistant** that answers natural-language questions about Indian law using a **Retrieval-Augmented Generation (RAG)** pipeline. It runs fully locally (no external APIs) and produces grounded answers with citations.
 
-> **Note**: This project runs fully locally using **Docker + Ollama** (no external APIs required).
+> **Note**: The stack is designed to run locally using **Docker + Ollama**.
 
 ## 🚀 Features
 
-- 🔎 Semantic search over Constitution Articles **1–35**
-- ⚖️ Grounded legal answers with article references
-- 🧠 Local LLM inference with **Ollama**
-- 📚 Vector search with **ChromaDB**
+- 📚 Browse and query **multiple law sections** (Constitution + additional acts/sections)
+- 🔎 Semantic retrieval with source citations
+- 🧠 Local LLM inference with **Ollama** (default: `llama3.1:8b`)
+- 📦 Vector search with **ChromaDB**
 - ⚡ **FastAPI** backend API
-- 💻 **React** frontend
-- 🐳 Dockerized LLM + vector database
+- 💻 **React + Vite** frontend
 - 🧩 **LangChain**-based RAG pipeline
+- 🎯 **Cross-encoder reranking** for better relevance
 - 🔒 Fully local (no cloud dependencies)
-- 🎯 **Out-of-scope detection** — gracefully handles irrelevant queries
+- 🧯 **Out-of-scope detection** to handle unrelated queries gracefully
+- ⚡ Performance improvements for faster responses (latest updates)
 
-## 🧠 How it works
+## 🧠 How it works (Flow)
 
 1. **Data ingestion**
-   - Loads articles from `COI.json`
-   - Chunks and embeds the text
+   - Loads legal text sources (for example: `COI.json` and other datasets you add)
+   - Chunks and embeds documents
 2. **Vector storage**
    - Stores embeddings in **ChromaDB**
 3. **Query processing**
    - Embeds the user query
-   - Retrieves the most relevant articles
-   - **Cross-encoder reranking** scores relevance
-   - Out-of-scope queries are detected and handled gracefully
+   - Retrieves the most relevant chunks
+   - **Cross-encoder reranking** improves relevance
+   - Out-of-scope queries are detected and handled
 4. **Answer generation**
    - Sends retrieved context to the Ollama LLM
    - Returns an answer with citations
@@ -36,7 +37,7 @@ A local **AI legal assistant** that answers natural‑language questions about t
 ## 🏗️ System architecture
 
 ```text
-User (React Frontend)
+User (React + Vite Frontend)
         |
         v
 FastAPI Backend
@@ -48,23 +49,23 @@ LangChain RAG Pipeline
 ChromaDB Vector Search
         |
         v
-Relevant Articles Retrieved
+Relevant Chunks Retrieved
         |
         v
-Cross-Encoder Reranker (Out-of-scope detection)
+Cross-Encoder Reranker + Out-of-scope Detection
         |
         v
 Ollama LLM (llama3.1:8b)
         |
         v
-Legal Response with Citations
+Grounded Answer + Citations
 ```
 
 ## 🛠️ Tech stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React |
+| Frontend | React, Vite |
 | Backend | FastAPI |
 | LLM Framework | LangChain |
 | Local LLM | Ollama |
@@ -76,12 +77,10 @@ Legal Response with Citations
 
 ```text
 Jolly-LLB/
-├── .gitignore
 ├── frontend/               # React UI
-├── backend/                # server
+├── backend/                # API + RAG pipeline
 ├── docker-compose.yml
-├──Readme.md
-
+├── README.md
 ```
 
 ## ⚙️ Prerequisites
@@ -89,10 +88,10 @@ Jolly-LLB/
 - Python **3.10+**
 - Node.js
 - Docker
-- Docker Compose (optional)
 
-## Manual setup
-## 🐳 Start Ollama (Docker) 
+## 🐳 Manual setup (Local)
+
+### 1) Start Ollama
 
 ```bash
 docker run -d \
@@ -100,21 +99,11 @@ docker run -d \
   -v ollama:/root/.ollama \
   --name ollama \
   ollama/ollama
-```
 
-Pull the model:
-
-```bash
 docker exec -it ollama ollama pull llama3.1:8b
 ```
 
-Verify:
-
-```bash
-docker exec -it ollama ollama list
-```
-
-## 🐳 Start ChromaDB
+### 2) Start ChromaDB
 
 ```bash
 docker run -d \
@@ -123,51 +112,33 @@ docker run -d \
   chromadb/chroma
 ```
 
-## 📦 Backend setup
-
-Create and activate a virtual environment:
+### 3) Backend setup
 
 ```bash
 python -m venv venv
-```
-
-Windows:
-
-```bash
-venv\Scripts\activate
-```
-
-Linux / macOS:
-
-```bash
-source venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
+# Windows: venv\Scripts\activate
+# Linux/macOS: source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 📚 Ingest constitution articles
+#### 📚 Ingest legal documents
 
-Run ingestion once to embed the dataset and store it in ChromaDB:
+Run ingestion once to embed the dataset(s) and store them in ChromaDB:
 
 ```bash
 python -m app.ingest
 ```
 
-### ▶️ Run backend API
+### 4) Run the backend API
 
 ```bash
 uvicorn app.main:app --reload --port 8080
 ```
 
 API docs:
-
 - http://localhost:8080/docs
 
-## 💻 Frontend setup
+### 5) Frontend setup
 
 ```bash
 cd frontend
@@ -176,7 +147,6 @@ npm run dev
 ```
 
 Frontend runs on:
-
 - http://localhost:5173
 
 ## 🧪 Example query
@@ -210,21 +180,19 @@ Frontend runs on:
 - Law student study tools
 - Civic education platforms
 - AI-powered legal search
-- Constitutional question answering
 
 ## ⚠️ Limitations
 
-- Does not include case law or legal interpretation
 - Not a substitute for professional legal advice
+- Quality depends on the datasets you ingest (coverage may be incomplete)
 
 ## 🔮 Future improvements
 
-- Add the entire Constitution dataset
+- Add more datasets and better metadata
 - Case law retrieval
-- Better ranking of legal citations
+- Better ranking/grounding of citations
 - Streaming responses
 - Authentication + deployment
-- Multi-document legal RAG
 
 ## 📜 License
 
