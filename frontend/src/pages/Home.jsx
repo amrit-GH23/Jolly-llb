@@ -131,7 +131,7 @@ export default function Home() {
                                     <>Thinking...</>
                                 ) : (
                                     <>
-                                        <Send size={16} /> Ask Harvey
+                                        <Send size={16} /> Ask Jolly
                                     </>
                                 )}
                             </button>
@@ -163,7 +163,7 @@ export default function Home() {
                                 <div className="typing-dot" />
                                 <div className="typing-dot" />
                             </div>
-                            <span className="typing-text">Harvey is analyzing the Constitution...</span>
+                            <span className="typing-text">Jolly is analyzing the Constitution...</span>
                         </div>
                     </div>
                 </div>
@@ -191,7 +191,7 @@ export default function Home() {
                                 <div className="response-avatar">
                                     <Scale size={16} color="#0a0e17" />
                                 </div>
-                                <span className="response-header-label">Harvey Spector</span>
+                                <span className="response-header-label">Jolly LLB</span>
                             </div>
                         </div>
                         <div className="response-body">

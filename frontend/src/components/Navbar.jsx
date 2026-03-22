@@ -13,7 +13,7 @@ export default function Navbar() {
                         <Scale size={18} color="#0a0e17" />
                     </div>
                     <div className="navbar-brand-text">
-                        Harvey <span>Spector</span>
+                        Jolly <span>LLB</span>
                     </div>
                 </Link>
 
@@ -25,7 +25,7 @@ export default function Navbar() {
                             className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
                             onClick={() => setMobileOpen(false)}
                         >
-                            Ask Harvey
+                            Ask Jolly
                         </NavLink>
                     </li>
                     <li>

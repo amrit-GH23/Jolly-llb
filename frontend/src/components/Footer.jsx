@@ -6,7 +6,7 @@ export default function Footer() {
             <div className="footer-inner">
                 <div className="footer-text">
                     <Scale size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
-                    Built with <span>Harvey Spector</span> — Powered by Ollama + ChromaDB + LangChain
+                    Built with <span>Jolly LLB</span> — Powered by Ollama + ChromaDB + LangChain
                 </div>
                 <div className="footer-links">
                     <a href="/docs" target="_blank" rel="noreferrer">API Docs</a>
