@@ -1,9 +1,13 @@
 """
-Harvey Spector — Constitution of India Ingestion
-=================================================
-Reads COI.json, converts each Article into a LangChain Document
-(format: "Article [No]: [Title]. [Content]") and stores in ChromaDB.
-Skips if collection already has data.
+Jolly LLB — Constitution of India Ingestion (Structural RAG)
+=================================================================
+Reads COI.json and produces TWO sets of documents:
+
+  1. Parent documents — Full article text (stored in ChromaDB parents collection)
+  2. Child chunks    — Smaller ~200-token pieces (stored in main collection)
+
+Each child chunk carries metadata linking it back to its parent article,
+enabling "Small-to-Big" parent-document retrieval at query time.
 """
 
 import json
@@ -14,7 +18,15 @@ from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 
-from app.config import OLLAMA_BASE_URL, EMBED_MODEL, CHROMA_COLLECTION, CHROMA_PERSIST_DIR
+from app.config import (
+    OLLAMA_BASE_URL,
+    EMBED_MODEL,
+    CHROMA_COLLECTION,
+    CHROMA_PARENT_COLLECTION,
+    CHROMA_PERSIST_DIR,
+    CHILD_CHUNK_SIZE,
+    CHILD_CHUNK_OVERLAP,
+)
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "COI.json")
 
@@ -49,7 +61,9 @@ def _build_article_text(article: dict) -> str:
 
     if "Explanations" in article:
         for exp in article["Explanations"]:
-            content_parts.append(f"Explanation {exp.get('ExplanationNo', '')}: {exp.get('Explanation', '')}")
+            content_parts.append(
+                f"Explanation {exp.get('ExplanationNo', '')}: {exp.get('Explanation', '')}"
+            )
 
     content = " ".join(content_parts)
     return f"Article {art_no}: {name}. {content}"
@@ -63,15 +77,36 @@ def _get_part_for_article(art_no: str, parts_index: list) -> str:
     return "Unknown"
 
 
-def load_documents() -> list[Document]:
-    """Load COI.json and convert to LangChain Documents."""
+def _chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
+    """Split text into overlapping chunks by character count."""
+    if len(text) <= chunk_size:
+        return [text]
+
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start += chunk_size - overlap
+    return chunks
+
+
+def load_documents() -> tuple[list[Document], list[Document]]:
+    """
+    Load COI.json and produce:
+      - parent_docs: one Document per article (full text)
+      - child_docs:  multiple smaller chunks per article
+    """
     with open(os.path.normpath(DATA_PATH), "r", encoding="utf-8") as f:
         raw = json.load(f)
 
     articles_list = raw[0]
     parts_index = raw[1]
 
-    documents = []
+    parent_docs = []
+    child_docs = []
+
     for article in articles_list:
         if article.get("Status") == "Omitted":
             print(f"  [skip] Omitted Article {article.get('ArtNo')}")
@@ -82,39 +117,52 @@ def load_documents() -> list[Document]:
             continue
 
         art_no = article.get("ArtNo", "")
-        doc = Document(
+        part = _get_part_for_article(art_no, parts_index)
+        title = article.get("Name", "")
+        parent_id = f"art_{art_no}"
+
+        # ── Parent document (full article) ──────────────────────
+        parent_doc = Document(
             page_content=text,
             metadata={
                 "article_no": art_no,
-                "part": _get_part_for_article(art_no, parts_index),
-                "title": article.get("Name", ""),
+                "part": part,
+                "title": title,
+                "parent_id": parent_id,
+                "doc_type": "parent",
             },
         )
-        documents.append(doc)
+        parent_docs.append(parent_doc)
 
-    print(f"  [OK] Prepared {len(documents)} documents.")
-    return documents
+        # ── Child chunks ────────────────────────────────────────
+        chunks = _chunk_text(text, CHILD_CHUNK_SIZE, CHILD_CHUNK_OVERLAP)
+        for idx, chunk in enumerate(chunks):
+            child_doc = Document(
+                page_content=chunk,
+                metadata={
+                    "article_no": art_no,
+                    "part": part,
+                    "title": title,
+                    "parent_id": parent_id,
+                    "doc_type": "child",
+                    "chunk_index": idx,
+                },
+            )
+            child_docs.append(child_doc)
+
+    print(f"  [OK] Prepared {len(parent_docs)} parent docs, {len(child_docs)} child chunks.")
+    return parent_docs, child_docs
 
 
 def ingest():
-    """Ingest articles into ChromaDB. Skips if already populated."""
-    print("\n== Ingestion =====================================")
+    """Ingest articles into ChromaDB as parent + child documents."""
+    print("\n== Ingestion (Structural RAG) =====================")
 
     persist_dir = os.path.normpath(CHROMA_PERSIST_DIR)
     os.makedirs(persist_dir, exist_ok=True)
-    chroma_client = chromadb.PersistentClient(path=persist_dir)
 
-    # Idempotency check
-    # try:
-    #     collection = chroma_client.get_collection(CHROMA_COLLECTION)
-    #     if collection.count() > 0:
-    #         print(f"  [OK] Collection '{CHROMA_COLLECTION}' already has {collection.count()} docs. Skipping.")
-    #         return
-    # except Exception:
-    #     pass
-
-    documents = load_documents()
-    if not documents:
+    parent_docs, child_docs = load_documents()
+    if not parent_docs:
         print("  [WARN] No documents to ingest.")
         return
 
@@ -122,13 +170,27 @@ def ingest():
     print("  This may take a few minutes on first run...")
     embeddings = OllamaEmbeddings(model=EMBED_MODEL, base_url=OLLAMA_BASE_URL)
 
+    # ── Store parent documents ──────────────────────────────
+    print(f"  Ingesting {len(parent_docs)} parent documents...")
     Chroma.from_documents(
-        documents=documents,
+        documents=parent_docs,
+        embedding=embeddings,
+        collection_name=CHROMA_PARENT_COLLECTION,
+        persist_directory=persist_dir,
+    )
+    print(f"  [OK] Parent collection '{CHROMA_PARENT_COLLECTION}' ready.")
+
+    # ── Store child chunks ──────────────────────────────────
+    print(f"  Ingesting {len(child_docs)} child chunks...")
+    Chroma.from_documents(
+        documents=child_docs,
         embedding=embeddings,
         collection_name=CHROMA_COLLECTION,
         persist_directory=persist_dir,
     )
-    print(f"  [OK] Ingested {len(documents)} articles into ChromaDB.")
+    print(f"  [OK] Child collection '{CHROMA_COLLECTION}' ready.")
+
+    print(f"\n  ✅ Ingestion complete: {len(parent_docs)} articles → {len(child_docs)} chunks.")
 
 
 if __name__ == "__main__":

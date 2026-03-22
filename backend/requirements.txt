@@ -5,3 +5,5 @@ langchain-community
 langchain-ollama
 chromadb
 python-dotenv
+rank_bm25
+sentence-transformers

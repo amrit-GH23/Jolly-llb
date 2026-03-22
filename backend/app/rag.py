@@ -1,52 +1,44 @@
 """
-Harvey Spector — RAG Retrieval & Synthesis
-==========================================
-1. Similarity search → Top 3 articles from ChromaDB
+Jolly LLB — RAG Retrieval & Synthesis
+======================================
+1. Hybrid retrieval → Top articles via metadata filter / BM25+vector / reranker
 2. Context injection → Formatted source strings
-3. System prompt → Legal assistant with strict grounding
+3. System prompt → Legal assistant with strict grounding + out-of-scope handling
 4. Output → { answer, sources }
 """
 
-import os
-
-import chromadb
-from langchain_ollama import OllamaEmbeddings, ChatOllama
-from langchain_community.vectorstores import Chroma
+from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from app.config import OLLAMA_BASE_URL, LLM_MODEL, EMBED_MODEL, CHROMA_COLLECTION, CHROMA_PERSIST_DIR
+from app.config import OLLAMA_BASE_URL, LLM_MODEL
+from app.hybrid_search import hybrid_retrieve
 
-SYSTEM_PROMPT = """You are a neutral Legal Assistant specialized in the Constitution of India.
+SYSTEM_PROMPT = """You are Jolly LLB, a friendly and knowledgeable Legal Assistant specialized in the Constitution of India.
 Using ONLY the provided Context, answer the User Query.
 
 Rules:
 1. Start by explicitly stating which Article(s) apply.
 2. Summarize the law in simple terms that a non-lawyer can understand.
 3. Do not give personal opinions; stick to the text of the Constitution.
-4. If the provided context does not contain the answer, state that the Constitution does not explicitly cover this specific detail.
-5. Always reference articles by their number and title."""
-
-
-def _get_vectorstore() -> Chroma:
-    """Connect to local ChromaDB collection."""
-    persist_dir = os.path.normpath(CHROMA_PERSIST_DIR)
-    return Chroma(
-        persist_directory=persist_dir,
-        collection_name=CHROMA_COLLECTION,
-        embedding_function=OllamaEmbeddings(model=EMBED_MODEL, base_url=OLLAMA_BASE_URL),
-    )
+4. Always reference articles by their number and title.
+5. If the User Query is clearly NOT related to law, the Indian Constitution, legal rights, governance, or anything even loosely connected to the Constitution of India, then DO NOT try to force an answer from the provided Context. Instead, politely explain that you are Jolly LLB — an AI assistant specialized in the Indian Constitution — and that this particular question falls outside your expertise. Then suggest 2-3 example questions the user could ask you instead, such as:
+   - "What does Article 21 say about the right to life?"
+   - "Explain the right to freedom of speech under Article 19"
+   - "What are the fundamental duties of Indian citizens?"
+6. However, if the query IS related to law, governance, rights, duties, or any constitutional topic — even if the provided context does not perfectly cover it — do your best to answer using the closest relevant articles from the context. If the context doesn't fully cover the topic, mention which articles are most relevant and note that the Constitution may have additional provisions not included in the current context.
+7. Be helpful and conversational in tone. You are named Jolly LLB — be approachable."""
 
 
 def get_legal_advice(user_query: str) -> dict:
     """
     RAG workflow:
-      1. Similarity search for top 3 articles
+      1. Hybrid retrieve (metadata filter → BM25+vector → rerank → parent lookup)
       2. Format context
-      3. Query LLM with legal system prompt
+      3. Query LLM with legal system prompt (handles out-of-scope via prompt)
       4. Return { answer, sources }
     """
-    # Step 1 — Retrieve
-    docs = _get_vectorstore().similarity_search(user_query, k=5)
+    # Step 1 — Retrieve via hybrid pipeline
+    docs = hybrid_retrieve(user_query, final_k=3)
 
     if not docs:
         return {"answer": "No relevant articles found.", "sources": []}

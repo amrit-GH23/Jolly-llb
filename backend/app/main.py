@@ -1,6 +1,6 @@
 """
-Harvey Spector — FastAPI Application
-=====================================
+Jolly LLB — FastAPI Application
+=================================
 GET  /          → Health check
 POST /query     → Semantic search + legal summary
 GET  /articles  → List all articles from COI.json
@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from app.rag import get_legal_advice
 
 app = FastAPI(
-    title="Harvey Spector",
+    title="Jolly LLB",
     description="⚖️ Semantic search over the Indian Constitution with legally grounded summaries.",
     version="1.0.0",
 )
@@ -50,7 +50,7 @@ class QueryResponse(BaseModel):
 # ── Endpoints ────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
 async def health():
-    return {"status": "healthy", "service": "Harvey Spector"}
+    return {"status": "healthy", "service": "Jolly LLB"}
 
 
 @app.post("/query", response_model=QueryResponse, tags=["Legal Query"])
