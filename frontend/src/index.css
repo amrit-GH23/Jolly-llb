@@ -1144,3 +1144,79 @@ textarea {
     font-size: 13px;
   }
 }
+
+/* ── Case Analyzer ─────────────────────────────────────── */
+.upload-box {
+  background: rgba(139, 92, 246, 0.05);
+  border: 2px dashed rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: 24px;
+}
+
+.upload-box:hover {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.6);
+}
+
+.upload-icon {
+  margin-bottom: 16px;
+}
+
+.upload-box h3 {
+  font-size: 18px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.upload-box p {
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.active-file-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+}
+
+.active-file-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.active-file-info h4 {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.file-size {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  padding: 6px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.icon-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}

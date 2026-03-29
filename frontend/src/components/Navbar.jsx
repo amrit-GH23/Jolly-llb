@@ -30,6 +30,15 @@ export default function Navbar() {
                     </li>
                     <li>
                         <NavLink
+                            to="/analyze"
+                            className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
+                            onClick={() => setMobileOpen(false)}
+                        >
+                            Analyze Case
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink
                             to="/articles"
                             className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
                             onClick={() => setMobileOpen(false)}
